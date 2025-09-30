@@ -1,0 +1,101 @@
+- name: Downlaod Tcp Brutal installer
+  get_url:
+    url: "{{ tcp_brutal_script_url }}"
+    dest: /tmp/tcp_brutal.sh
+    mode: 755
+    force: yes
+  tags:
+    - singbox
+
+- name: Execute the tcp_brutal.sh
+  shell: /tmp/tcp_brutal.sh
+  tags:
+    - singbox
+
+- name: Download singbox installer
+  get_url:
+    url: "{{ singbox_script_url }}"
+    dest: /tmp/singbox.sh
+    mode: 755
+    force: yes
+  tags:
+    - singbox
+
+- name: Execute the singbox.sh
+  shell: /tmp/singbox.sh
+  tags:
+    - singbox
+
+- name: cleanup
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - /tmp/singbox.sh
+    - /tmp/tcp_brutal.sh
+  tags:
+    - singbox
+
+- name: check if singbox config exists
+  local_action: stat path={{ singbox_config_file_path }}
+  register: singbox_config
+  tags:
+    - singbox
+    - singbox_config
+    - debug
+
+- name: singbox config warning
+  debug:
+    msg: |
+      singbox config does not exists! please create your own config at
+        {{ singbox_config_file_path }}
+  when: not singbox_config.stat.exists
+  tags:
+    - singbox
+    - singbox_config
+    - debug
+
+- name: copy singbox config
+  copy:
+    src: "{{ singbox_config_file_path }}"
+    dest: /etc/sing-box/
+    force: true
+  when: singbox_config.stat.exists
+  tags:
+    - singbox
+    - singbox_config
+
+- name: check singbox config
+  command: sing-box -C /etc/sing-box/ check
+  register: check_result
+  tags:
+    - singbox
+    - singbox_config
+
+- name: singbox config warning
+  debug:
+    msg: |
+      singbox config does not pass check! please check your config
+  when: check_result.failed
+  tags:
+    - singbox
+    - singbox_config
+    - debug
+
+- name: restart singbox
+  service:
+    name: sing-box
+    state: restarted
+  when: not check_result.failed
+  tags:
+    - singbox
+    - singbox_config
+
+- name: enable singbox
+  service:
+    name: sing-box
+    state: started
+    enabled: yes
+  when: not check_result.failed
+  tags:
+    - singbox

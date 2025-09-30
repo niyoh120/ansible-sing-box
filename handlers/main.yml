@@ -1,0 +1,7 @@
+---
+# handlers file for singbox-ansible
+
+- name: restart
+  service:
+    name: sing-box
+    state: restarted
