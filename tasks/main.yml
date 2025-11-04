@@ -5,97 +5,97 @@
     mode: 755
     force: yes
   tags:
-    - singbox
+    - sing-box
 
 - name: Execute the tcp_brutal.sh
   shell: /tmp/tcp_brutal.sh
   tags:
-    - singbox
+    - sing-box
 
-- name: Download singbox installer
+- name: Download sing-box installer
   get_url:
-    url: "{{ singbox_script_url }}"
-    dest: /tmp/singbox.sh
+    url: "{{ sing_box_script_url }}"
+    dest: /tmp/sing-box.sh
     mode: 755
     force: yes
   tags:
-    - singbox
+    - sing-box
 
-- name: Execute the singbox.sh
-  shell: /tmp/singbox.sh
+- name: Execute the sing-box.sh
+  shell: /tmp/sing-box.sh
   tags:
-    - singbox
+    - sing-box
 
 - name: cleanup
   file:
     path: "{{ item }}"
     state: absent
   with_items:
-    - /tmp/singbox.sh
+    - /tmp/sing-box.sh
     - /tmp/tcp_brutal.sh
   tags:
-    - singbox
+    - sing-box
 
-- name: check if singbox config exists
-  local_action: stat path={{ singbox_config_file_path }}
-  register: singbox_config
+- name: check if sing-box config exists
+  local_action: stat path={{ sing_box_config_file_path }}
+  register: sing-box-config
   tags:
-    - singbox
-    - singbox_config
+    - sing-box
+    - sing-box-config
     - debug
 
-- name: singbox config warning
+- name: sing-box config warning
   debug:
     msg: |
-      singbox config does not exists! please create your own config at
-        {{ singbox_config_file_path }}
-  when: not singbox_config.stat.exists
+      sing-box config does not exists! please create your own config at
+        {{ sing_box_config_file_path }}
+  when: not sing-box-config.stat.exists
   tags:
-    - singbox
-    - singbox_config
+    - sing-box
+    - sing-box-config
     - debug
 
-- name: copy singbox config
+- name: copy sing-box config
   copy:
-    src: "{{ singbox_config_file_path }}"
+    src: "{{ sing_box_config_file_path }}"
     dest: /etc/sing-box/
     force: true
-  when: singbox_config.stat.exists
+  when: sing-box-config.stat.exists
   tags:
-    - singbox
-    - singbox_config
+    - sing-box
+    - sing-box-config
 
-- name: check singbox config
+- name: check sing-box config
   command: sing-box -C /etc/sing-box/ check
   register: check_result
   tags:
-    - singbox
-    - singbox_config
+    - sing-box
+    - sing-box-config
 
-- name: singbox config warning
+- name: sing-box config warning
   debug:
     msg: |
-      singbox config does not pass check! please check your config
+      sing-box config does not pass check! please check your config
   when: check_result.failed
   tags:
-    - singbox
-    - singbox_config
+    - sing-box
+    - sing-box-config
     - debug
 
-- name: restart singbox
+- name: restart sing-box
   service:
     name: sing-box
     state: restarted
   when: not check_result.failed
   tags:
-    - singbox
-    - singbox_config
+    - sing-box
+    - sing-box-config
 
-- name: enable singbox
+- name: enable sing-box
   service:
     name: sing-box
     state: started
     enabled: yes
   when: not check_result.failed
   tags:
-    - singbox
+    - sing-box

@@ -1,5 +1,5 @@
 ---
-# handlers file for singbox-ansible
+# handlers file for sing-box-ansible
 
 - name: restart
   service:
