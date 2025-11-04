@@ -1,33 +1,37 @@
-- name: Downlaod Tcp Brutal installer
-  get_url:
+- name: Download Tcp Brutal installer
+  ansible.builtin.get_url:
     url: "{{ tcp_brutal_script_url }}"
     dest: /tmp/tcp_brutal.sh
     mode: 755
-    force: yes
+    force: true
+  when: enable_tcp_brutal
   tags:
     - sing-box
 
 - name: Execute the tcp_brutal.sh
-  shell: /tmp/tcp_brutal.sh
+  ansible.builtin.command: /tmp/tcp_brutal.sh
+  changed_when: false
+  when: enable_tcp_brutal
   tags:
     - sing-box
 
 - name: Download sing-box installer
-  get_url:
+  ansible.builtin.get_url:
     url: "{{ sing_box_script_url }}"
     dest: /tmp/sing-box.sh
     mode: 755
-    force: yes
+    force: true
   tags:
     - sing-box
 
 - name: Execute the sing-box.sh
-  shell: /tmp/sing-box.sh
+  ansible.builtin.command: /tmp/sing-box.sh
+  changed_when: false
   tags:
     - sing-box
 
-- name: cleanup
-  file:
+- name: Cleanup
+  ansible.builtin.file:
     path: "{{ item }}"
     state: absent
   with_items:
@@ -36,44 +40,48 @@
   tags:
     - sing-box
 
-- name: check if sing-box config exists
-  local_action: stat path={{ sing_box_config_file_path }}
-  register: sing-box-config
+- name: Check if sing-box config exists
+  delegate_to: localhost
+  ansible.builtin.stat:
+    path: "{{ sing_box_config_file }}"
+  register: sing_box_config
   tags:
     - sing-box
     - sing-box-config
     - debug
 
-- name: sing-box config warning
-  debug:
+- name: Sing-box config warning
+  ansible.builtin.debug:
     msg: |
       sing-box config does not exists! please create your own config at
-        {{ sing_box_config_file_path }}
-  when: not sing-box-config.stat.exists
+        {{ sing_box_config_file }}
+  when: not sing_box_config.stat.exists
   tags:
     - sing-box
     - sing-box-config
     - debug
 
-- name: copy sing-box config
-  copy:
-    src: "{{ sing_box_config_file_path }}"
+- name: Copy sing-box config
+  ansible.builtin.copy:
+    src: "{{ sing_box_config_file }}"
     dest: /etc/sing-box/
+    mode: '0644'
     force: true
-  when: sing-box-config.stat.exists
+  when: sing_box_config.stat.exists
   tags:
     - sing-box
     - sing-box-config
 
-- name: check sing-box config
-  command: sing-box -C /etc/sing-box/ check
+- name: Check sing-box config
+  ansible.builtin.command: sing-box -C /etc/sing-box/ check
   register: check_result
+  changed_when: false
   tags:
     - sing-box
     - sing-box-config
 
-- name: sing-box config warning
-  debug:
+- name: Sing-box config warning
+  ansible.builtin.debug:
     msg: |
       sing-box config does not pass check! please check your config
   when: check_result.failed
@@ -82,8 +90,8 @@
     - sing-box-config
     - debug
 
-- name: restart sing-box
-  service:
+- name: Restart sing-box
+  ansible.builtin.service:
     name: sing-box
     state: restarted
   when: not check_result.failed
@@ -91,11 +99,51 @@
     - sing-box
     - sing-box-config
 
-- name: enable sing-box
-  service:
+- name: Enable sing-box
+  ansible.builtin.service:
     name: sing-box
     state: started
-    enabled: yes
+    enabled: true
   when: not check_result.failed
   tags:
     - sing-box
+
+- name: Enable IP forwarding
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    state: present
+    sysctl_file: /etc/sysctl.d/99-ansible-sing-box.conf
+    reload: true
+  when: port_forwards is defined
+  tags:
+    - port-forwarding
+
+- name: Check for nftables
+  ansible.builtin.stat:
+    path: /usr/sbin/nft
+  register: nftables_binary
+  tags:
+    - port-forwarding
+
+- name: Include nftables tasks
+  ansible.builtin.include_tasks: nftables.yml
+  when: nftables_binary.stat.exists and port_forwards is defined
+  tags:
+    - port-forwarding
+
+- name: Check for iptables
+  ansible.builtin.stat:
+    path: /usr/sbin/iptables
+  register: iptables_binary
+  tags:
+    - port-forwarding
+
+- name: Include iptables tasks
+  ansible.builtin.include_tasks: iptables.yml
+  when:
+    - iptables_binary.stat.exists
+    - not nftables_binary.stat.exists
+    - port_forwards is defined
+  tags:
+    - port-forwarding

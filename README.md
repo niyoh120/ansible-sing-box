@@ -13,6 +13,26 @@ Role Variables
 
 A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
 
+### Port Forwarding
+
+This role supports port forwarding using either `iptables` or `nftables`. The backend is automatically detected based on the installed binaries.
+
+To configure port forwarding, you can define a dictionary of port mappings in your playbook or inventory variables.
+
+**Variable:** `port_forwards`
+
+**Type:** Dictionary
+
+**Example:**
+
+```yaml
+port_forwards:
+  8080: 8081
+  8443: 8444
+```
+
+This example will forward incoming traffic on port 8080 to port 8081, and port 8443 to port 8444.
+
 Dependencies
 ------------
 

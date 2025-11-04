@@ -1,0 +1,13 @@
+table ip nat {
+    chain ansible_sing_box_port_redirect {
+        {% for src_port, dest_port in port_forwards.items() %}
+        # 规则: {{ src_port }}:{{ dest_port }}
+        tcp dport {{ src_port }} redirect to :{{ dest_port }}
+        udp dport {{ src_port }} redirect to :{{ dest_port }}
+        {% endfor %}
+    }
+    chain prerouting {
+        type nat hook prerouting priority -100; policy accept;
+        fib daddr type local jump ansible_sing_box_port_redirect
+    }
+}

@@ -2,5 +2,7 @@
 # defaults file for sing-box-ansible
 
 sing_box_script_url: "https://sing-box.app/deb-install.sh"
-sing_box_config_file_path: "{{ inventory_dir }}/files/sing-box/config.json"
+sing_box_config_file: "{{ inventory_dir }}/files/sing-box/config.json"
+enable_tcp_brutal: true
 tcp_brutal_script_url: "https://tcp.hy2.sh"
+port_forwards: {}

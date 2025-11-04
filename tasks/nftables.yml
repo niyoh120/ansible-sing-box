@@ -1,0 +1,33 @@
+- name: Ensure nftables config directory exists
+  ansible.builtin.file:
+    path: /etc/nftables.d
+    state: directory
+    mode: "0755"
+  tags:
+    - port-forwarding
+
+- name: Generate nftables rules file
+  ansible.builtin.template:
+    src: nftables-rules.j2
+    dest: /etc/nftables.d/ansible-sing-box.conf
+    mode: "0644"
+  tags:
+    - port-forwarding
+
+- name: Ensure nftables main config includes our rules
+  ansible.builtin.lineinfile:
+    path: /etc/nftables.conf
+    line: 'include "/etc/nftables.d/*.conf"'
+    create: true
+    mode: "0644"
+  notify: Restart nftables
+  tags:
+    - port-forwarding
+
+- name: Ensure nftables service is running and enabled
+  ansible.builtin.service:
+    name: nftables
+    state: started
+    enabled: true
+  tags:
+    - port-forwarding

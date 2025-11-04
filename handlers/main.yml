@@ -1,7 +1,12 @@
 ---
 # handlers file for sing-box-ansible
 
-- name: restart
-  service:
+- name: Restart sing-box
+  ansible.builtin.service:
     name: sing-box
+    state: restarted
+
+- name: Restart nftables
+  ansible.builtin.service:
+    name: nftables
     state: restarted

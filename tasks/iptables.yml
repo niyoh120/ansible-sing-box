@@ -1,0 +1,12 @@
+- name: Set up iptables port forwarding
+  ansible.builtin.iptables:
+    table: nat
+    chain: PREROUTING
+    protocol: tcp
+    match: tcp
+    destination_port: "{{ item.key }}"
+    jump: REDIRECT
+    to_ports: "{{ item.value }}"
+  loop: "{{ port_forwards | dict2items }}"
+  tags:
+    - port-forwarding
